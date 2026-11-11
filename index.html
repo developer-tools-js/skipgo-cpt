@@ -5,7 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SkipGo Tracker</title>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Inter:wght@400;500;600&display=swap">
-<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="leaflet.css">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <style>
 :root{
   --bg:#eef1f4; --panel:#ffffff; --ink:#18222d; --muted:#5b6876; --line:#d3dae1;
@@ -201,8 +202,13 @@ tr.tot td{font-weight:600;border-top:2px solid var(--ink);border-bottom:0}
 <div class="toast" id="toast" hidden></div>
 
 <script src="config.js"></script>
-<script src="vendor/supabase.js"></script>
-<script src="vendor/leaflet.js"></script>
+<script src="supabase.js"></script>
+<script src="leaflet.js"></script>
+<script>
+// If the vendor folder did not reach the website, fetch the same programs from the internet instead.
+if(!window.supabase)document.write('<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"><\/script>');
+if(!window.L)document.write('<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"><\/script>');
+</script>
 <script>
 const CFG=window.SKIPGO_CONFIG||{};
 const LIVE=!!(CFG.supabaseUrl&&CFG.supabaseKey&&window.supabase);
@@ -1027,11 +1033,13 @@ function openPick(no,swap){
   </form>`;
   if(!d.open)d.showModal();
 }
-const loadScript=src=>new Promise((ok,no)=>{if(document.querySelector(`script[src="${src}"]`))return ok();const s=document.createElement('script');s.src=src;s.onload=ok;s.onerror=()=>no(new Error('A required file could not load: '+src));document.head.appendChild(s)});
+const CDN={'msal-browser.min.js':'https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js','jspdf.umd.min.js':'https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js','xlsx.full.min.js':'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'};
+const loadScript=(src,second)=>new Promise((ok,no)=>{if(document.querySelector(`script[src="${src}"]`))return ok();const s=document.createElement('script');s.src=src;s.onload=ok;
+  s.onerror=()=>CDN[src]&&!second?loadScript(CDN[src],true).then(ok,no):no(new Error('A required file could not load: '+src));document.head.appendChild(s)});
 let msApp=null;
 async function msToken(){
   if(!CFG.msClientId)throw new Error('OneDrive is not connected yet. Follow step 7 in the setup guide.');
-  await loadScript('vendor/msal-browser.min.js');
+  await loadScript('msal-browser.min.js');
   if(!msApp)msApp=new window.msal.PublicClientApplication({auth:{clientId:CFG.msClientId,authority:'https://login.microsoftonline.com/'+(CFG.msTenant||'common'),redirectUri:location.origin+location.pathname},cache:{cacheLocation:'localStorage'}});
   const req={scopes:['Files.ReadWrite']}, acc=msApp.getAllAccounts()[0];
   if(acc){try{return (await msApp.acquireTokenSilent({...req,account:acc})).accessToken}catch(e){}}
@@ -1057,7 +1065,7 @@ async function priceFor(clientName,size){
   return std?{amount:val(std),from:'standard price in the OneDrive price list'}:{amount:null,from:'no price found in the OneDrive price list'};
 }
 async function makePdf(j,no,amount,method){
-  await loadScript('vendor/jspdf.umd.min.js');
+  await loadScript('jspdf.umd.min.js');
   const doc=new window.jspdf.jsPDF({unit:'mm',format:'a4'}), ex=amount/1.15, vat=S.cfg.vat, size=skip(j.drop_skips[0])?.size||2;
   const money=n=>'R '+n.toLocaleString('en-ZA',{minimumFractionDigits:2,maximumFractionDigits:2});
   doc.setFont('helvetica','bold');doc.setFontSize(18);doc.text(S.cfg.biz||'Invoice',20,25);
@@ -1114,7 +1122,7 @@ function openMove(id){
 }
 
 /* ----- Excel backup ----- */
-async function loadXlsx(){if(window.XLSX)return;await new Promise((ok,no)=>{const s=document.createElement('script');s.src='vendor/xlsx.full.min.js';s.onload=ok;s.onerror=()=>no(new Error('The Excel tool could not load.'));document.head.appendChild(s)})}
+async function loadXlsx(){if(window.XLSX)return;await loadScript('xlsx.full.min.js')}
 async function exportAll(){
   toast('Preparing the backup…');
   await loadXlsx();
