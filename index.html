@@ -209,7 +209,8 @@ const LIVE=!!(CFG.supabaseUrl&&CFG.supabaseKey&&window.supabase);
 const sb=LIVE?supabase.createClient(CFG.supabaseUrl,CFG.supabaseKey):null;
 const DOMAIN=CFG.loginDomain||'skipgo-users.com';
 const PREVIEW=!LIVE&&window.SKIPGO_PREVIEW?window.SKIPGO_PREVIEW:null;
-const KEY=PREVIEW?'skipgo-preview-v1':'skipgo-local-v6', DAY=864e5;
+const KEY=PREVIEW?'skipgo-preview-'+(PREVIEW.version||PREVIEW.clients.length+'-'+PREVIEW.jobs.length)+'-v3':'skipgo-local-v7', DAY=864e5;
+try{Object.keys(localStorage).filter(k=>/^skipgo-/.test(k)&&k!==KEY).forEach(k=>localStorage.removeItem(k))}catch(e){}
 const WASTE=['Mixed','Clean rubble','Garden','Wood','General','Recycle material'];
 const HIRE=[[3,'3 days'],[7,'1 week'],[14,'2 weeks']];
 const TYPE={drop:'Drop off',pick:'Pick up',swap:'Swap',other:'Other'};
@@ -772,10 +773,18 @@ function mapView(){
 function drawMap(){
   const el=$('#lmap'); if(!el||!window.L)return;
   lmap=L.map(el,{scrollWheelZoom:false});
-  // On the website: OpenStreetMap. When the page is opened straight from a file (the private preview), OpenStreetMap
-  // refuses the tiles, so CARTO's copy of the same map is used instead.
-  if(location.protocol==='file:')L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',{subdomains:'abcd',maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'}).addTo(lmap);
-  else L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(lmap);
+  // Street map pictures. If one map service refuses (for example when the page is opened from a file), try the next.
+  const att='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+  const MAPS=[
+    ['https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',{subdomains:'abcd',maxZoom:19,attribution:att+' &copy; <a href="https://carto.com/attributions">CARTO</a>'}],
+    ['https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:att}],
+    ['https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}',{maxZoom:19,attribution:'Tiles &copy; Esri'}]];
+  if(location.protocol!=='file:')MAPS.unshift(MAPS.splice(1,1)[0]);
+  let mi=0, fails=0, ok=0, layer=null;
+  const useMap=()=>{if(layer)lmap.removeLayer(layer);fails=0;ok=0;layer=L.tileLayer(MAPS[mi][0],MAPS[mi][1]).addTo(lmap);
+    layer.on('tileload',()=>{ok++});
+    layer.on('tileerror',()=>{fails++;if(fails>=4&&ok===0){if(mi<MAPS.length-1){mi++;useMap()}else toast('The street map could not load. Check the internet connection. Directions links still work.')}})};
+  useMap();
   const icon=(cls,txt)=>L.divIcon({className:'',html:`<span class="pin ${cls}">${txt}</span>`,iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-14]});
   const bounds=[], cnt={};
   outNow().forEach(s=>{const j=s.job,i=cnt[j.area]=(cnt[j.area]||0);cnt[j.area]++;const p=skipLL(s,i);if(!p)return;
