@@ -45,6 +45,9 @@ create table public.clients (
   lat double precision,
   lng double precision,
   waste text not null default '',
+  size text not null default '',          -- usual skip size(s)
+  payment text not null default '',       -- EFT or COD (never an amount)
+  handled_by text not null default '',    -- e.g. Gareth, as on the old client cards
   sla boolean not null default false,
   sla_days text not null default '',
   notes text not null default '',
@@ -194,7 +197,8 @@ revoke execute on function public._client_for(text, text, text) from public, ano
 create function public.save_client(
   p_id bigint, p_name text, p_contact text, p_phone text, p_email text, p_address text, p_area text,
   p_waste text, p_sla boolean, p_sla_days text, p_notes text, p_office_notes text,
-  p_lat double precision default null, p_lng double precision default null)
+  p_lat double precision default null, p_lng double precision default null,
+  p_size text default null, p_payment text default null, p_handled_by text default null)
 returns bigint language plpgsql security definer set search_path = public as $$
 declare v_id bigint := p_id;
 begin
@@ -206,7 +210,8 @@ begin
   update public.clients set name = trim(p_name), contact = coalesce(p_contact, ''), phone = coalesce(p_phone, ''),
     email = coalesce(p_email, ''), address = coalesce(p_address, ''), area = coalesce(trim(p_area), ''),
     waste = coalesce(p_waste, ''), sla = coalesce(p_sla, false), sla_days = coalesce(p_sla_days, ''),
-    notes = coalesce(p_notes, ''), lat = coalesce(p_lat, lat), lng = coalesce(p_lng, lng)
+    notes = coalesce(p_notes, ''), lat = coalesce(p_lat, lat), lng = coalesce(p_lng, lng),
+    size = coalesce(p_size, size), payment = coalesce(p_payment, payment), handled_by = coalesce(p_handled_by, handled_by)
   where id = v_id;
   if not found then raise exception 'That client no longer exists.'; end if;
   insert into public.client_private (client_id, office_notes) values (v_id, coalesce(p_office_notes, ''))

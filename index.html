@@ -89,6 +89,7 @@ th{font-size:.72rem;text-transform:uppercase;letter-spacing:.07em;color:var(--mu
 th,td{padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
 td.num{font-family:var(--display);font-weight:700;font-size:1.2rem;font-variant-numeric:tabular-nums}
 td select{padding:6px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg)}
+table.clients td.w{white-space:normal;min-width:140px;max-width:260px;overflow-wrap:anywhere}
 tr.click{cursor:pointer} tr.click:hover td{background:var(--bg)}
 .two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
 .wide{grid-column:1/-1}
@@ -167,6 +168,7 @@ tr.tot td{font-weight:600;border-top:2px solid var(--ink);border-bottom:0}
 .yr{padding:7px 8px;border:1px solid var(--line);border-radius:6px;background:var(--bg);font-weight:600}
 .popact{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
 .popact button{font:inherit;font-size:.8rem;padding:4px 10px;border-radius:5px;border:1px solid #c9d1d9;background:#fff;cursor:pointer}
+.popact a.gm{font-size:.8rem;padding:4px 10px;border-radius:5px;border:1px solid #c9d1d9;background:#fff;color:#1d5fa8;text-decoration:none}
 .popact button.go{background:#f0b400;border-color:#f0b400;font-weight:600}
 .leaflet-popup-content table{font-size:.78rem}
 .leaflet-popup-content td{padding:2px 6px 2px 0;border:0}
@@ -237,7 +239,7 @@ function blank(){return {skips:[],log:[],yards:[],yardGeo:{},users:[],inv:[],cli
 function seed(){
   let r=7; const rnd=()=>(r=(r*16807)%2147483647)/2147483647;
   const yards=['Killarney Gardens','Durbanville'];
-  const users=[{u:'office',name:'Office (Lerato)',role:'office'},{u:'tapson',name:'Tapson',role:'driver'},{u:'mike',name:'Mike',role:'driver'}];
+  const users=[{u:'office',name:'Office',role:'office'},{u:'tapson',name:'Tapson',role:'driver'},{u:'mike',name:'Mike',role:'driver'},{u:'gareth',name:'Gareth',role:'driver'}];
   const cl=[['Protea Renovations','Table View',0],['Mrs Abrahams','Milnerton',0],['Bluegum Builders','Brackenfell',1],['Harbour Kitchens','Montague Gardens',0],['Mr Daniels','Durbanville',0],['Fynbos Landscaping','Parklands',1],['Northgate Shopfitters','Bellville',0],['Oakdale Primary','Kenridge',0],['Seaview Body Corporate','Blouberg',1],['Ms Petersen','Sea Point',0],['Kestrel Plumbing','Goodwood',0],['Vineyard Guesthouse','Durbanville',0]];
   const contacts=['Thabo','Mrs Abrahams','Riaan','Nadia','Mr Daniels','Lize','Kevin','Mrs Jacobs','Body corporate office','Ms Petersen','Wayne','Annelie'];
   const terms={2:'Tues & Thurs',5:'Mon, Wed, Fri',8:'Swap within 24 hours'};
@@ -295,7 +297,7 @@ function seed(){
 }
 function fromPreview(P){
   const t0=today(), histTo=addDays(t0,-60), base={address:'',lat:null,lng:null,waste:'Mixed',days:3,moved_from:null,moves:0,done_at:null,by_name:'',source:'spreadsheet',invoice:null};
-  const users=[{u:'office',name:'Office',role:'office'},{u:'tapson',name:'Tapson',role:'driver'},{u:'mike',name:'Mike',role:'driver'}];
+  const users=[{u:'office',name:'Office',role:'office'},{u:'tapson',name:'Tapson',role:'driver'},{u:'mike',name:'Mike',role:'driver'},{u:'gareth',name:'Gareth',role:'driver'}];
   const jobs=P.jobs.filter(j=>j.date>=histTo||j.status==='planned').map(j=>({...base,...j}));
   const cpriv={}; P.clients.forEach(c=>cpriv[c.id]={office_notes:''});
   return {skips:JSON.parse(JSON.stringify(P.skips)),log:[],yards:[...P.yards],yardGeo:P.yardGeo||{},users,inv:[],clients:JSON.parse(JSON.stringify(P.clients)),cpriv,jobs,jprice:{},histTo,
@@ -346,7 +348,7 @@ function histJobs(d){
   const wd=(new Date(d+'T12:00:00').getDay()+6)%7, n=wd===6?0:wd===5?1+Math.floor(rnd()*2):3+Math.floor(rnd()*7), out=[];
   for(let i=0;i<n;i++){const a=HIST_AREAS[Math.floor(rnd()*HIST_AREAS.length)],x=rnd(),typ=x<.4?'drop':x<.75?'pick':'swap';
     out.push({id:-(+d.replace(/-/g,'')*100+i),hist:1,date:d,run:wd>=5?1:1+(i%2),pos:i,type:typ,status:'done',client_id:null,client:HIST_NAMES[Math.floor(rnd()*HIST_NAMES.length)],area:a[0],area_code:a[1],address:'',lat:null,lng:null,waste:'Mixed',days:3,skip:null,
-      drop_skips:typ!=='pick'?[1+Math.floor(rnd()*58)]:[],pick_skips:typ!=='drop'?[1+Math.floor(rnd()*58)]:[],note:'',driver:rnd()<.5?'Tapson':'Mike',moved_from:null,moves:0,done_at:null,by_name:'',source:'spreadsheet'})}
+      drop_skips:typ!=='pick'?[1+Math.floor(rnd()*58)]:[],pick_skips:typ!=='drop'?[1+Math.floor(rnd()*58)]:[],note:'',driver:['Tapson','Mike','Gareth'][Math.floor(rnd()*3)],moved_from:null,moves:0,done_at:null,by_name:'',source:'spreadsheet'})}
   out.forEach(j=>HIST.set(j.id,j)); HIST.set(d,out); return out;
 }
 function addLog(e){S.log.unshift({t:Date.now(),by:me.name,...e})}
@@ -379,7 +381,7 @@ async function refresh(){
     one(sb.from('yards').select('*').order('name')),
     one(sb.from('profiles').select('*').order('name')),
     one(sb.from('settings').select('*')),
-    fetchAll(()=>sb.from('clients').select('id,name,contact,phone,email,address,area,lat,lng,waste,sla,sla_days,notes,legacy').order('name')),
+    fetchAll(()=>sb.from('clients').select('id,name,contact,phone,email,address,area,lat,lng,waste,size,payment,handled_by,sla,sla_days,notes,legacy').order('name')),
     office?fetchAll(()=>sb.from('client_private').select('*')):[]]);
   const jp=[], inv=[];
   S.yards=yd.map(y=>y.name); S.yardGeo=Object.fromEntries(yd.filter(y=>y.lat!=null).map(y=>[y.name,[y.lat,y.lng]]));
@@ -419,7 +421,7 @@ const RPC={
   invoice:a=>['file_invoice',{p_job:a.job,p_no:a.no}],
   cancelJob:a=>['cancel_job',{p_id:a.id}],
   finishJob:a=>['finish_job',{p_id:a.id}],
-  saveClient:a=>['save_client',{p_id:a.id??null,p_name:a.name,p_contact:a.contact,p_phone:a.phone,p_email:a.email,p_address:a.address,p_area:a.area,p_waste:a.waste,p_sla:a.sla,p_sla_days:a.sla_days,p_notes:a.notes,p_office_notes:a.office_notes,p_lat:a.lat??null,p_lng:a.lng??null}],
+  saveClient:a=>['save_client',{p_id:a.id??null,p_name:a.name,p_contact:a.contact,p_phone:a.phone,p_email:a.email,p_address:a.address,p_area:a.area,p_waste:a.waste,p_sla:a.sla,p_sla_days:a.sla_days,p_notes:a.notes,p_office_notes:a.office_notes,p_lat:a.lat??null,p_lng:a.lng??null,p_size:a.size??null,p_payment:a.payment??null,p_handled_by:a.handled_by??null}],
   service:a=>['set_service',{p_no:a.no,p_on:a.on}],
   size:a=>['set_size',{p_no:a.no,p_size:a.size}],
   addSkip:a=>['add_skip',{p_no:a.no,p_size:a.size,p_yard:a.yard}],
@@ -482,7 +484,7 @@ const local={
   saveClient(a){
     if(!a.name)throw new Error('Give the client a name.');
     let c=a.id?client(a.id):null; if(!c){c={id:S.clientSeq++};S.clients.push(c)}
-    Object.assign(c,{name:a.name,contact:a.contact,phone:a.phone,email:a.email,address:a.address,area:a.area,waste:a.waste,sla:a.sla,sla_days:a.sla_days,notes:a.notes,lat:a.lat??c.lat??null,lng:a.lng??c.lng??null});
+    Object.assign(c,{name:a.name,contact:a.contact,phone:a.phone,email:a.email,address:a.address,area:a.area,waste:a.waste,size:a.size||'',payment:a.payment||'',handled_by:a.handled_by||'',sla:a.sla,sla_days:a.sla_days,notes:a.notes,lat:a.lat??c.lat??null,lng:a.lng??c.lng??null});
     S.cpriv[c.id]={price:a.price??null,method:a.method||'EFT',office_notes:a.office_notes||''};return c.id},
   service(a){const s=skip(a.no);if(a.on){if(s.status!=='yard')throw new Error('Only a skip standing in a yard can be taken out of service.');s.status='service';s.yard=null;addLog({type:'service',skip:s.no})}else{s.status='yard';s.yard=S.yards[0];addLog({type:'back',skip:s.no,yard:s.yard})}},
   size(a){skip(a.no).size=a.size},
@@ -527,13 +529,12 @@ function render(clear){
   const keep={}, fid=document.activeElement&&document.activeElement.id;
   if(!clear)document.querySelectorAll('#app input[id],#app select[id],#app textarea[id]').forEach(el=>{if(el.id!=='dayPick'&&el.id!=='yearPick')keep[el.id]=el.type==='checkbox'?el.checked:el.value});
   if(lmap){lmap.remove();lmap=null}
-  document.querySelector('.wrap').classList.toggle('full',!!me&&tab==='sched'&&schedMode!=='day');
-  $('#demoTag').hidden=LIVE;$('#demoTag').textContent=PREVIEW?'Private preview with real data, on this computer only':'Demo with sample data';
+  document.querySelector('.wrap').classList.toggle('full',!!me&&((tab==='sched'&&schedMode!=='day')||tab==='clients'));
+  $('#demoTag').hidden=true;
   const who=$('#who'), app=$('#app');
   if(!booted){who.innerHTML='';app.innerHTML='<section class="panel login"><p class="note">Loading…</p></section>';return}
   if(!me){who.innerHTML='';app.innerHTML=loginView();return}
   who.innerHTML=`<span>Signed in as <strong>${esc(me.name||me.u)}</strong></span>
-    ${LIVE?'':`<span class="seg" role="group" aria-label="Try a role">${S.users.map(u=>`<button data-as="${u.u}" aria-pressed="${u.u===me.u}">${u.role==='office'?'Office':esc(u.name)}</button>`).join('')}</span>`}
     <button class="btn small" data-act="signout">Sign out</button>`;
   if(me.role==='pending'){app.innerHTML=`<section class="panel stack login"><h2>Waiting for approval</h2><p class="note">Your login was created. Someone in the office needs to approve it under Settings, Users before you can see the tracker.</p><button class="btn primary" data-act="recheck">Check again</button></section>`;return}
   const tabs=me.role==='office'
@@ -663,8 +664,8 @@ function gridView(){
   <div class="mscroll"><div class="mgrid${schedMode==='week'?' big':''}">${cells}</div></div>
   <div class="glegend"><span><i style="background:var(--cdel)"></i>Skip delivered</span><span><i style="background:var(--ccol)"></i>Skip collected</span>
     <span><i style="box-shadow:inset 0 0 0 2px var(--late)"></i>Planned delivery</span><span><i style="box-shadow:inset 0 0 0 2px var(--yard)"></i>Planned collection</span>
-    <span><i style="background:var(--sla-bg)"></i>SLA client</span><span><i style="background:var(--past-bg);border:1px solid var(--line)"></i>Day done</span><span><i style="background:var(--late)"></i>Red name: not done on that day</span><span><b>T</b> Tapson · <b>M</b> Mike</span></div>
-  <p class="note">Each line shows the client, area, skip delivered, skip collected and the driver (T = Tapson, M = Mike). The day header shows planned jobs, then skips delivered and collected. Tap a job for details, tap a day to open it${office?', press + to add a job, and drag a planned job to another day or column to reschedule it':', and drag a planned job to another day to reschedule it'}.</p>
+    <span><i style="background:var(--sla-bg)"></i>SLA client</span><span><i style="background:var(--past-bg);border:1px solid var(--line)"></i>Day done</span><span><i style="background:var(--late)"></i>Red name: not done on that day</span><span><b>T</b> Tapson · <b>M</b> Mike · <b>G</b> Gareth</span></div>
+  <p class="note">Each line shows the client, area, skip delivered, skip collected and the driver (T = Tapson, M = Mike, G = Gareth). The day header shows planned jobs, then skips delivered and collected. Tap a job for details, tap a day to open it${office?', press + to add a job, and drag a planned job to another day or column to reschedule it':', and drag a planned job to another day to reschedule it'}.</p>
   </section>`;
 }
 function openJob(id){const j=job(id),d=$('#dlg');if(!j)return;
@@ -749,6 +750,8 @@ function skipHistory(no){
   if(PREVIEW&&l.length<8){const old=[];previewDays().forEach(v=>v.forEach(j=>{if(own(j))old.push(j)}));old.forEach(j=>HIST.set(j.id,j));l=l.concat(old)}
   return l;
 }
+// A link that opens Google Maps at the skip, for directions on the driver's phone.
+function gmaps(j,p){const q=j.lat!=null?`${j.lat},${j.lng}`:p&&p[2]!=='area'?`${p[0]},${p[1]}`:[j.address,j.area,'Cape Town'].filter(Boolean).join(', ');return 'https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(q)}
 function recentHtml(no){
   const h=skipHistory(no).sort((a,b)=>b.date.localeCompare(a.date)||b.id-a.id).slice(0,3);
   return h.length?`<table style="margin-top:6px">${h.map(j=>`<tr><td>${dayShort(j.date)}</td><td>${j.pick_skips.includes(no)?'Collected':'Delivered'}</td><td>${esc(j.client)}</td></tr>`).join('')}</table>`:'';
@@ -769,13 +772,16 @@ function mapView(){
 function drawMap(){
   const el=$('#lmap'); if(!el||!window.L)return;
   lmap=L.map(el,{scrollWheelZoom:false});
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(lmap);
+  // On the website: OpenStreetMap. When the page is opened straight from a file (the private preview), OpenStreetMap
+  // refuses the tiles, so CARTO's copy of the same map is used instead.
+  if(location.protocol==='file:')L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png',{subdomains:'abcd',maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>'}).addTo(lmap);
+  else L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'}).addTo(lmap);
   const icon=(cls,txt)=>L.divIcon({className:'',html:`<span class="pin ${cls}">${txt}</span>`,iconSize:[30,30],iconAnchor:[15,15],popupAnchor:[0,-14]});
   const bounds=[], cnt={};
   outNow().forEach(s=>{const j=s.job,i=cnt[j.area]=(cnt[j.area]||0);cnt[j.area]++;const p=skipLL(s,i);if(!p)return;
     const dim=areaF&&areaKey(j)!==areaF;
     L.marker([p[0],p[1]],{icon:icon(`${p[2]}${isLate(s)?' late':''}${dim?' dim':''}`,s.no),zIndexOffset:dim?0:500}).addTo(lmap)
-      .bindPopup(()=>`<strong>Skip ${s.no}</strong> · ${esc(j.client)}<br>${esc([j.address,j.area].filter(Boolean).join(', '))}<br>${daysOut(j)} days out${isLate(s)?', overdue':''}<br>${p[2]==='gps'?'Location from the driver’s phone':p[2]==='addr'?'Location from the address':'Suburb only, no exact pin'}${j.flag?`<br><strong>Check:</strong> dropped ${j.flag} m from the booked address`:''}${recentHtml(s.no)}<div class="popact"><button class="go" data-picknow="${s.no}">Pick up</button><button data-swapnow="${s.no}">Swap</button><button data-skip="${s.no}">Details</button></div>`);
+      .bindPopup(()=>`<strong>Skip ${s.no}</strong> · ${esc(j.client)}<br>${esc([j.address,j.area].filter(Boolean).join(', '))}<br>${daysOut(j)} days out${isLate(s)?', overdue':''}<br>${p[2]==='gps'?'Location from the driver’s phone':p[2]==='addr'?'Location from the address':'Suburb only, no exact pin'}${j.flag?`<br><strong>Check:</strong> dropped ${j.flag} m from the booked address`:''}${recentHtml(s.no)}<div class="popact"><button class="go" data-picknow="${s.no}">Pick up</button><button data-swapnow="${s.no}">Swap</button><button data-skip="${s.no}">Details</button><a class="gm" href="${gmaps(j,p)}" target="_blank" rel="noopener">Directions</a></div>`);
     if(!dim)bounds.push([p[0],p[1]])});
   S.yards.forEach(y=>{const c=S.yardGeo[y]||ll(y);if(!c)return;
     L.marker(c,{icon:icon('yardpin'+(areaF?' dim':''),avail().filter(s=>s.yard===y).length)}).addTo(lmap).bindPopup(()=>{const a=avail().filter(s=>s.yard===y);return `<strong>${esc(y)} yard</strong><br>${a.length?'Tap a skip to drop it off at a client:':'No skips available'}<div class="popact">${a.map(s=>`<button data-dropnow="${s.no}">${s.no}</button>`).join('')}</div>`});
@@ -848,14 +854,14 @@ function clientsView(){
   const outBy={}; outNow().forEach(s=>{const c=clientOf(s.job);if(c)outBy[c.id]=(outBy[c.id]||0)+1});
   let list=S.clients.filter(c=>(clientF!=='sla'||c.sla)&&(clientF!=='out'||outBy[c.id])&&(!q||[c.name,c.contact,c.phone,c.email,c.address,c.area].join(' ').toLowerCase().includes(q)));
   list.sort((a,b)=>(b.sla-a.sla)||a.name.localeCompare(b.name));
-  const shown=list.slice(0,300);
+  const shown=list;
   return `<section class="panel stack">
   <div class="row spread"><h2>Clients</h2><button class="btn primary" data-client="new">Add client</button></div>
   <div class="row"><div class="field grow" style="max-width:360px"><label for="cSearch">Search name, contact, phone or address</label><input id="cSearch" type="search" value="${esc(clientSearch)}" placeholder="e.g. a name or 082"></div>
     <span class="seg" role="group" aria-label="Filter clients">${[['all','All'],['sla','SLA only'],['out','With skips out']].map(f=>`<button data-cf="${f[0]}" aria-pressed="${clientF===f[0]}">${f[1]}</button>`).join('')}</span></div>
-  <p class="note">${list.length} clients${list.length>shown.length?`, showing the first ${shown.length}. Search to narrow the list.`:'.'} SLA clients have a contract and are listed first.</p>
-  <div class="scroll"><table><thead><tr><th>Client</th><th>Contact</th><th>Phone</th><th>Area</th><th>Skips out</th></tr></thead><tbody>
-  ${shown.map(c=>`<tr class="click" data-client="${c.id}"><td>${esc(c.name)} ${c.sla?'<span class="pill sla">SLA</span>':''}</td><td>${esc(c.contact)}</td><td>${esc(c.phone)}</td><td>${esc(c.area)}</td><td>${outBy[c.id]||''}</td></tr>`).join('')||'<tr><td colspan="6">No clients match.</td></tr>'}
+  <p class="note">${list.length} of ${S.clients.length} clients. SLA clients have a contract and are listed first. Tap a client to see or change their details.</p>
+  <div class="scroll"><table class="clients"><thead><tr><th>Client</th><th>Contact person</th><th>Phone</th><th>Email</th><th>Address</th><th>Area</th><th>Skip size</th><th>Payment</th><th>Skips out</th></tr></thead><tbody>
+  ${shown.map(c=>`<tr class="click" data-client="${c.id}"><td>${esc(c.name)} ${c.sla?'<span class="pill sla">SLA</span>':''}</td><td class="w">${esc(c.contact)}</td><td class="w">${esc(c.phone)}</td><td class="w">${esc(c.email)}</td><td class="w">${esc(c.address)}</td><td>${esc(c.area)}</td><td class="w">${esc(c.size||'')}</td><td>${esc(c.payment||'')}</td><td>${outBy[c.id]||''}</td></tr>`).join('')||'<tr><td colspan="9">No clients match.</td></tr>'}
   </tbody></table></div></section>`}
 function openClient(id){
   const c=id==='new'?{name:'',contact:'',phone:'',email:'',address:'',area:'',waste:'',sla:false,sla_days:'',notes:''}:client(id), p=S.cpriv[c.id]||{}, d=$('#dlg'), lg=c.legacy;
@@ -869,20 +875,25 @@ function openClient(id){
     <div class="row"><div class="field" style="flex:2 1 200px"><label for="cAddr">Street address</label><input id="cAddr" value="${esc(c.address)}"></div>
       <div class="field grow"><label for="cArea">Area</label><input id="cArea" list="areaList" value="${esc(c.area)}"></div></div>
     ${lookup('c')}
-    <div class="field"><label for="cWaste">Usual waste</label><input id="cWaste" value="${esc(c.waste)}"></div>
+    <div class="row"><div class="field grow"><label for="cWaste">Usual waste</label><input id="cWaste" value="${esc(c.waste)}"></div>
+      <div class="field grow"><label for="cSize">Skip size</label><input id="cSize" value="${esc(c.size||'')}"></div>
+      <div class="field grow"><label for="cPayment">Payment</label><input id="cPayment" value="${esc(c.payment||'')}" placeholder="EFT or COD"></div></div>
+    <div class="field"><label for="cHandled">Handled by</label><input id="cHandled" value="${esc(c.handled_by||'')}" placeholder="e.g. Gareth"></div>
     <label class="check"><input type="checkbox" id="cSla" ${c.sla?'checked':''}> SLA client (contract in place)</label>
     <div class="field"><label for="cSlaDays">SLA days or terms</label><input id="cSlaDays" value="${esc(c.sla_days)}" placeholder="e.g. Tues & Thurs, swap within 24 hours"></div>
     <p class="note">Prices, including SLA contract prices, are kept in the price list in OneDrive, not here.</p>
     <div class="field"><label for="cNotes">Notes drivers can see</label><textarea id="cNotes">${esc(c.notes)}</textarea></div>
     <div class="field"><label for="cOffice">Office notes (drivers cannot see)</label><textarea id="cOffice">${esc(p.office_notes||'')}</textarea></div>
     ${lg?`<details><summary>From the old spreadsheet</summary><dl class="kv" style="margin-top:8px">
-      <dt>On the sheets</dt><dd>${esc(lg.first_sheet)} to ${esc(lg.last_sheet)} (${lg.months} months)</dd>
+      ${lg.source==='schedule only'?`<dt>On the schedule</dt><dd>${esc(lg.first_date)} to ${esc(lg.last_date)} (${lg.jobs} jobs), no client card</dd>`:`<dt>On the sheets</dt><dd>${esc(lg.first_sheet)} to ${esc(lg.last_sheet)} (${lg.months} months)</dd>`}
+      ${lg.card_headers?.length?`<dt>Card headers</dt><dd>${esc(lg.card_headers.slice(-6).join('; '))}</dd>`:''}
+      ${lg.emails?.length?`<dt>Emails</dt><dd>${esc(lg.emails.join('; '))}</dd>`:''}
       ${lg.names_used?.length>1?`<dt>Names used</dt><dd>${esc(lg.names_used.join('; '))}</dd>`:''}
       ${lg.contacts?.length?`<dt>Contacts</dt><dd>${esc(lg.contacts.join('; '))}</dd>`:''}
       ${lg.phones?.length?`<dt>Phones</dt><dd>${esc(lg.phones.join('; '))}</dd>`:''}
       ${lg.addresses?.length>1?`<dt>Addresses</dt><dd>${esc(lg.addresses.join(' | '))}</dd>`:''}
       ${lg.skip_numbers?.length?`<dt>Skip numbers</dt><dd>${esc(lg.skip_numbers.join(' '))}</dd>`:''}
-      <dt>Card colour</dt><dd>${esc(lg.card_colour_now||'')}</dd></dl></details>`:''}
+      ${lg.card_colour_now?`<dt>Card colour</dt><dd>${esc(lg.card_colour_now)}</dd>`:''}</dl></details>`:''}
     <div class="row"><button class="btn primary">Save client</button><button type="button" class="btn" data-act="close" style="margin-left:auto">Close</button></div>
   </form>`;
   if(!d.open)d.showModal();
@@ -969,7 +980,7 @@ async function openSkip(n){
   d.innerHTML=`<div class="stack">
     <div class="row spread"><div><div class="bigno">${s.no}</div><div class="note">${s.size} m³ skip${s.note?' · marked '+esc(s.note):''}</div></div>
     <span class="pill ${binClass(s)}">${s.status==='service'?'Out of service':s.status==='yard'?'Available':isLate(s)?'Overdue':'At client'}</span></div>
-    <dl class="kv">${s.job?`<dt>Client</dt><dd>${esc(s.job.client)}</dd><dt>Where</dt><dd>${esc([s.job.address,s.job.area].filter(Boolean).join(', '))}</dd><dt>Location</dt><dd>${s.job.pin==='gps'?'From the driver\'s phone':s.job.lat!=null?'From the address':'Suburb only'}${s.job.flag?`. Check: dropped ${s.job.flag} m from the booked address`:''}</dd><dt>Dropped</dt><dd>${fmtT(s.job.droppedAt)} by ${esc(s.job.by)}</dd><dt>Pick-up due</dt><dd>${fmt(s.job.dueAt)} (${daysOut(s.job)} days out)</dd>${s.job.inv?`<dt>Invoice</dt><dd>${s.job.inv} ${payPill(iv(s.job.inv))}</dd>`:''}`:s.yard?`<dt>Yard</dt><dd>${esc(s.yard)}</dd>`:`<dt>Status</dt><dd>Not available for hire</dd>`}</dl>
+    <dl class="kv">${s.job?`<dt>Client</dt><dd>${esc(s.job.client)}</dd><dt>Where</dt><dd>${esc([s.job.address,s.job.area].filter(Boolean).join(', '))}</dd><dt>Map</dt><dd><a href="${gmaps(s.job)}" target="_blank" rel="noopener">Open in Google Maps</a></dd><dt>Location</dt><dd>${s.job.pin==='gps'?'From the driver\'s phone':s.job.lat!=null?'From the address':'Suburb only'}${s.job.flag?`. Check: dropped ${s.job.flag} m from the booked address`:''}</dd><dt>Dropped</dt><dd>${fmtT(s.job.droppedAt)} by ${esc(s.job.by)}</dd><dt>Pick-up due</dt><dd>${fmt(s.job.dueAt)} (${daysOut(s.job)} days out)</dd>${s.job.inv?`<dt>Invoice</dt><dd>${s.job.inv} ${payPill(iv(s.job.inv))}</dd>`:''}`:s.yard?`<dt>Yard</dt><dd>${esc(s.yard)}</dd>`:`<dt>Status</dt><dd>Not available for hire</dd>`}</dl>
     <h3>Recent movements</h3>
     ${hist.length?`<div class="scroll"><table><tbody>${hist.slice(0,8).map(j=>`<tr><td>${dayShort(j.date)}</td><td><span class="pill ${j.pick_skips.includes(s.no)?'yard':'out'}">${j.pick_skips.includes(s.no)?'Collected':'Delivered'}</span></td><td>${esc(j.client)}</td><td>${esc(j.area)}</td></tr>`).join('')}</tbody></table></div>`:'<p class="note">No movements found.</p>'}
     <div class="row">${s.status==='yard'?`<button class="btn primary" data-dropnow="${s.no}">Drop off at a client</button>`:''}${s.status==='client'?`<button class="btn primary" data-picknow="${s.no}">Pick up</button><button class="btn" data-swapnow="${s.no}">Swap</button>`:''}${office&&s.status==='yard'?`<button class="btn" data-svc="${s.no}">Out of service</button>`:''}${office&&s.status==='service'?`<button class="btn" data-svc="${s.no}">Back in service</button>`:''}${office&&s.status!=='client'?`<button class="btn" data-size="${s.no}">Change to ${s.size===2?3:2} m³</button>`:''}<button class="btn primary" data-act="close" style="margin-left:auto">Close</button></div>
@@ -1102,7 +1113,7 @@ async function exportAll(){
   if(LIVE)jobs=(await fetchAll(()=>sb.from('jobs').select('*').order('date').order('run').order('pos'))).map(normJob);
   const d=x=>x?new Date(x):'';
   const wb=XLSX.utils.book_new(), add=(name,rows)=>XLSX.utils.book_append_sheet(wb,XLSX.utils.json_to_sheet(rows.length?rows:[{Note:'Nothing yet'}]),name);
-  add('Clients',S.clients.map(c=>({ID:c.id,Client:c.name,SLA:c.sla?'Yes':'',SLA_terms:c.sla_days,Contact:c.contact,Phone:c.phone,Email:c.email,Address:c.address,Area:c.area,Waste:c.waste,Notes:c.notes,Office_notes:S.cpriv[c.id]?.office_notes||''})));
+  add('Clients',S.clients.map(c=>({ID:c.id,Client:c.name,SLA:c.sla?'Yes':'',SLA_terms:c.sla_days,Contact:c.contact,Phone:c.phone,Email:c.email,Address:c.address,Area:c.area,Waste:c.waste,Skip_size:c.size||'',Payment:c.payment||'',Handled_by:c.handled_by||'',Notes:c.notes,Office_notes:S.cpriv[c.id]?.office_notes||''})));
   add('Skips',S.skips.map(s=>({Skip:s.no,Size_m3:s.size,Status:s.status==='client'?'At client':s.status==='yard'?'In yard':'Out of service',Yard:s.yard||'',Client:s.job?.client||'',Area:s.job?.area||'',Address:s.job?.address||'',Dropped:s.job?d(s.job.droppedAt):'',Due:s.job?d(s.job.dueAt):'',Mark:s.note||''})));
   add('Schedule',[...jobs].sort((a,b)=>a.date.localeCompare(b.date)||a.run-b.run||a.pos-b.pos).map(j=>({Date:j.date,Driver:driverOf(j),Job:TYPE[j.type],Status:j.status,Client:j.client,Area:j.area,Area_code:j.area_code||'',Address:j.address,Skip_to_collect:j.skip||'',Delivered:j.drop_skips.join(', '),Collected:j.pick_skips.join(', '),Note:j.note,Moved_from:j.moved_from||'',Invoice:j.invoice||'',Recorded_by:j.by_name||'',Source:j.source})));
   add('History',S.log.map(l=>({When:d(l.t),Action:(LBL[l.type]||[l.type])[0],Skip:l.skip,Client:l.client||'',Area:l.area||'',Yard:l.yard||'',By:l.by||''})));
@@ -1240,7 +1251,7 @@ document.addEventListener('submit',async e=>{
     }
     if(f==='clientForm'){
       const id=+e.target.dataset.id||null;
-      const a={id,name:v('cName'),contact:v('cContact'),phone:v('cPhone'),email:v('cEmail'),address:v('cAddr'),area:v('cArea'),waste:v('cWaste'),sla:$('#cSla').checked,sla_days:v('cSlaDays'),notes:v('cNotes'),office_notes:v('cOffice'),...(pins.c?{lat:pins.c.lat,lng:pins.c.lng}:{})};
+      const a={id,name:v('cName'),contact:v('cContact'),phone:v('cPhone'),email:v('cEmail'),address:v('cAddr'),area:v('cArea'),waste:v('cWaste'),size:v('cSize'),payment:v('cPayment'),handled_by:v('cHandled'),sla:$('#cSla').checked,sla_days:v('cSlaDays'),notes:v('cNotes'),office_notes:v('cOffice'),...(pins.c?{lat:pins.c.lat,lng:pins.c.lng}:{})};
       if((await act('saveClient',a)).ok){pins.c=null;$('#dlg').close();render();toast(`${a.name} saved`)}
     }
     if(f==='addSkip'){const no=+v('aNo');if((await act('addSkip',{no,size:+v('aSize'),yard:v('aYard')})).ok){render(true);toast(`Skip ${no} added`)}}
